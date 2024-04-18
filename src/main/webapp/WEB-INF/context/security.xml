@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans
+	xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+            http://www.springframework.org/schema/security
+            http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+
+	<http auto-config="false" use-expressions="true" disable-url-rewriting="true">
+	
+		<!-- chỉ role ADMIN mới vào được /quan-tri/trang-chu -->
+		<intercept-url pattern="/quan-tri/trang-chu" access="hasAnyRole('ADMIN')" />
+		
+		<!-- khi user k vào được /quan-tri/trang-chu thì vào controller /accessDenied -->
+		<access-denied-handler error-page="/accessDenied" />
+		<!-- login-processing-url: là action security viết cho cta -->
+		<form-login login-page="/dang-nhap"
+					username-parameter="j_username" password-parameter="j_password"
+					login-processing-url="/j_spring_security_check"
+					authentication-success-handler-ref="customSuccessHandler"
+					authentication-failure-url="/dang-nhap?incorrectAccount" />
+		<!-- đăng nhập xong nhưng k thao tác gì trên web trong 1 khoảng thời gian dài thì tự động logout -> k thoát có thể bị người khác vào phá -->
+		<session-management invalid-session-url="/dang-nhap?sessionTimeout" />
+		<logout delete-cookies="JSESSIONID" />
+	</http>
+	
+	
+	<!-- khi sử dụng md5 encode mật khẩu thì khi login xuống database cũng phải encode nên cần đoạn này -->
+	<authentication-manager >
+        <authentication-provider user-service-ref="customUserDetailsService">
+        		<password-encoder ref="bcryptEncoder"/>
+        </authentication-provider>
+    </authentication-manager>
+    
+    <!-- Để sử dụng class CustomUserDetailsService.java thì cần có đoạn dưới.
+    	 Khi đăng nhập xong cta đẩy username và password lên thì nó vô đây xử lý.-->
+    <beans:bean id="customUserDetailsService" class="com.laptrinhjavaweb.service.impl.CustomUserDetailsService" />
+    <!-- Xử lý encode password -->
+    <beans:bean id="bcryptEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+    <beans:bean id="customSuccessHandler" class="com.laptrinhjavaweb.security.CustomSuccessHandler" />
+</beans:beans>
